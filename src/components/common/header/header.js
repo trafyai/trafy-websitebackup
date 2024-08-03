@@ -3,7 +3,7 @@ import '@styles/common/header/Header.css';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState, useRef , useEffect} from "react";
-import WhiteLogo from '@public/assets/Images/comman/header/whiteLogo.png';
+import WhiteLogo from '@public/assets/Images/comman/header/WhiteLogo.png';
 import BlackLogo from '@public/assets/Images/comman/header/blackLogo.png';
 import close from '@public/assets/Images/comman/header/close.png';
 import close1 from '@public/assets/Images/comman/header/close (1).png';
