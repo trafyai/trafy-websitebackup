@@ -90,6 +90,10 @@
     position: relative;
     width: 100%;
 }
+
+.swal2-content {
+    font-family: 'Roboto', sans-serif!important; /* Ensures Roboto is used */
+}
 .enquiry-course {
     appearance: none;
     width: 100%;

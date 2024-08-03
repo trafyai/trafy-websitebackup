@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import '@styles/common/auth/Enquiry.css';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
+import { database } from '../../firebase'; // Adjust the import path as necessary
+import { ref, set } from 'firebase/database';
+import axios from 'axios';
 
-const EnquiryForm = () => {
+const EnquiryForm = (props) => {
     const [formData, setFormData] = useState({
         fname: "",
         lname: "",
         email: "",
         phone: "",
-        course: "",
-        message: ""
+        message: "",
     });
 
     const [errorMessages, setErrorMessages] = useState({
@@ -21,11 +22,10 @@ const EnquiryForm = () => {
         lname: "",
         email: "",
         phone: "",
-        course: "",
-        message: ""
+        message: "",
     });
 
-    const [formSubmitted, setFormSubmitted] = useState(false);
+    const [isPopupVisible, setIsPopupVisible] = useState(true);
     const router = useRouter();
 
     const handleChange = (e) => {
@@ -57,14 +57,13 @@ const EnquiryForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const { fname, lname, email, phone, course, message } = formData;
+        const { fname, lname, email, phone, message } = formData;
 
         const newErrorMessages = {
             fname: !fname ? "Please enter your first name." : "",
             lname: !lname ? "Please enter your last name." : "",
             email: !email ? "Please enter your email address." : "",
             phone: !phone ? "Please enter your phone number." : "",
-            course: !course ? "Please select a course." : "",
             message: "" // No validation for the message field
         };
 
@@ -74,46 +73,52 @@ const EnquiryForm = () => {
             return;
         }
 
-        // Proceed with form submission
-        const options = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        };
+        setIsPopupVisible(false); // Close the form immediately
 
+        // Show the "Thank you" popup
+        Swal.fire({
+            title: 'Form Submitted',
+            text: 'Thank you for submitting the form.',
+            icon: 'success',
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            toast: true,
+            customClass: {
+                popup: 'small-toast', 
+                title: 'swal2-title-custom', 
+                content: 'swal2-content-custom' 
+            }
+        });
+
+        // Store form data in Firebase Realtime Database
         try {
-            const res = await fetch('https://courseenquiryform-default-rtdb.firebaseio.com/EnquiryFormData.json', options);
+            const formPath = `Forms/${props.formType}/${Date.now()}`;
+            const formRef = ref(database, formPath);
+            await set(formRef, formData);
+
+            // Proceed with additional form submission actions asynchronously
+            const res = await fetch(`${props.link}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
             if (res.ok) {
-                axios.post("http://localhost:5002/course-enquiry/submit", { email: formData.email, fname: formData.fname, course: formData.course }, { timeout: 10000 })
-                    .then(response => {
-                        console.log(response.data);
-                        Swal.fire({
-                            title: 'Form Submitted',
-                            text: 'Thank you for submitting the form.',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        }).then(() => {
-                            setFormSubmitted(true); // Set formSubmitted to true to trigger navigation
-                        });
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'An error occurred while sending the email notification.',
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
-                    });
+                await axios.post("https://trafyai.com/course-enquiry/submit", {
+                    email: formData.email,
+                    fname: formData.fname,
+                    course: props.name
+                }, { timeout: 10000 });
 
                 setFormData({
                     fname: "",
                     lname: "",
                     email: "",
                     phone: "",
-                    course: "",
                     message: ""
                 });
             } else {
@@ -135,21 +140,16 @@ const EnquiryForm = () => {
         }
     };
 
-    useEffect(() => {
-        if (formSubmitted) {
-            router.push('/courses/uiux-course');
-            setFormSubmitted(false); // Reset formSubmitted to false for future submissions
-        }
-    }, [formSubmitted, router]);
-
     return (
-        <main>
-            <div className="course-enquiry-form">
-                <div className="course-enquiry-form-container">
+        <>
+            {isPopupVisible && (
+                <div className="popup-overlay">
                     <div className="course-enquiry-form-contents">
+                        <button className="close-popup-button" onClick={() => setIsPopupVisible(false)}>x</button>
                         <form className="enquiryform" onSubmit={handleSubmit} autoComplete="off" method="POST">
                             <div className="enquiryform-heading">
-                                <h2>Ready to get started?</h2>
+                                <h2>Get Started With</h2>
+                                <h4>{props.name}</h4>
                             </div>
                             <div className="enquiryname">
                                 <div className="enquiryfname">
@@ -169,24 +169,15 @@ const EnquiryForm = () => {
                                 <input type="tel" placeholder="Phone Number" required className="enquiry-phone" name="phone" onChange={handleChange} value={formData.phone} />
                                 {errorMessages.phone && <p className="error-message">{errorMessages.phone}</p>}
                             </div>
-                            <div className="enquirycourse-container">
-                                <select className="enquiry-course" name="course" required onChange={handleChange} value={formData.course}>
-                                    <option value="">Select a Course</option>
-                                    <option value="UI/UX-Beginners ">UI/UX-Beginners</option>
-                                    <option value="UI/UX-Intermediate">UI/UX-Intermediate</option>
-                                    <option value="UI/UX-Advance">UI/UX-Advance</option>
-                                </select>
-                                {errorMessages.course && <p className="error-message">{errorMessages.course}</p>}
-                            </div>
                             <div className="enquirymessage">
                                 <textarea type="text" placeholder="Message" className="enquiry-message" name="message" style={{ width: "100%" }} value={formData.message} onChange={handleChange} />
                             </div>
-                            <button type="submit" className="course-enquiry-button">Get in touch</button>
+                            <button type="submit" className="course-enquiry-button">Submit</button>
                         </form>
                     </div>
                 </div>
-            </div>
-        </main>
+            )}
+        </>
     );
 }
 
