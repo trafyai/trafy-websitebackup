@@ -4,7 +4,6 @@ import { useState } from 'react';
 import '@styles/common/auth/Enquiry.css';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
-import { database } from '../../firebase'; // Adjust the import path as necessary
 import { ref, set } from 'firebase/database';
 import axios from 'axios';
 
